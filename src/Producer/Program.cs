@@ -1,6 +1,9 @@
 ﻿using System;
 using System.ComponentModel.Design;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 
 namespace Producer
@@ -21,18 +24,26 @@ namespace Producer
 			using var connection = factory.CreateConnection();
 			using var channel = connection.CreateModel();
 
-			channel.QueueDeclare(queue:"default", durable: false, exclusive: false, autoDelete: false, arguments: null);
+			channel.QueueDeclare(queue: "messageQueue", durable: false, exclusive: false, autoDelete: false, arguments: null);
 
-			var message = "Hello world ;)";
-			while (!string.IsNullOrWhiteSpace(message))
+			var notification = "Hello world ;)";
+			while (!string.IsNullOrWhiteSpace(notification))
 			{
 				Console.WriteLine("Enter a Message: ");
-				message = Console.ReadLine();
+				notification = Console.ReadLine();
+				var message = new Message()
+				{
+					From = "Majid@yahoo.com",
+					To = "Parsa@gmail.com",
+					Body = notification
+				};
 
-				var body = Encoding.UTF8.GetBytes(message);
-				channel.BasicPublish(exchange: "", routingKey: "default", basicProperties: null, body: body);
+				var objMessage = JsonConvert.SerializeObject(message);
+				var body = Encoding.UTF8.GetBytes(objMessage);
+				channel.BasicPublish(exchange: "", routingKey: "messageQueue", basicProperties: null, body: body);
 
-				Console.WriteLine("Message send from [Produser] to [Consumer]: " + message);
+				Console.WriteLine("Message send from [Produser] to [Consumer]: " + 
+				                  "From: " + message.From + ", To: " + message.To + ", Body: " + message.Body);
 
 			}
 		}
